@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useApp } from './context/AppContext';
-import AltNav from './bileşenler/AltNav';
-import Toast from './bileşenler/Toast';
-import Splash from './bileşenler/Splash';
-import Bildirimler from './bileşenler/Bildirimler';
+import AltNav from './components/AltNav';
+import Toast from './components/Toast';
+import Splash from './components/Splash';
+import Notifications from './components/Notifications';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -21,25 +21,25 @@ import Favorites from './pages/Favorites';
 import MyListings from './pages/MyListings';
 import Profile from './pages/Profile';
 
-const GIZLE_NAV = ['/giriş', '/kayıp/oluştur', '/sahiplendirme/oluştur', '/mama/oluştur'];
+const HIDE_NAV = ['/giris', '/kayıp/olustur', '/sahiplendirme/olustur', '/mama/olustur'];
 
-function hideNav(yolAdi) {
-  if (GIZLE_NAV.includes(yolAdi)) return true;
-  if (/^\/kayıp\/[^/]+\/düzenle/.test(yolAdi) && yolAdi !== '/kayıp/oluştur') return true;
-  if (/^\/sahiplendirme\/[^/]+\/düzenle/.test(yolAdi) && yolAdi !== '/sahiplendirme/oluştur') return true;
-  if (/^\/mama\/[^/]+\/düzenle/.test(yolAdi) && yolAdi !== '/mama/oluştur') return true;
+function hideNav(pathname) {
+  if (HIDE_NAV.includes(pathname)) return true;
+  if (/^\/kayıp\/[^/]+\/düzenle/.test(pathname) && pathname !== '/kayıp/olustur') return true;
+  if (/^\/sahiplendirme\/[^/]+\/düzenle/.test(pathname) && pathname !== '/sahiplendirme/olustur') return true;
+  if (/^\/mama\/[^/]+\/düzenle/.test(pathname) && pathname !== '/mama/olustur') return true;
   return false;
 }
 
 export default function App() {
   const { toast, showSplash } = useApp();
-  const konum = useLocation();
-  const noNav = hideNav(konum.pathname);
+  const location = useLocation();
+  const noNav = hideNav(location.pathname);
   const [bildirimAcik, setBildirimAcik] = useState(false);
 
   useEffect(() => {
     setBildirimAcik(false);
-  }, [konum.pathname]);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!bildirimAcik) return;
@@ -63,20 +63,20 @@ export default function App() {
       <div className="uygulama-cercevesi" onClick={acikBildirimler}>
         {showSplash && <Splash />}
         {toast && <Toast mesaj={toast} />}
-        <Bildirimler acik={bildirimAcik} kapat={() => setBildirimAcik(false)} />
+        <Notifications acik={bildirimAcik} kapat={() => setBildirimAcik(false)} />
 
         <div className={`uygulama-icerigi ${noNav ? 'navigasyon-yok' : ''}`}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/giriş" element={<Login />} />
+            <Route path="/giris" element={<Login />} />
             <Route path="/kayıp" element={<LostPets />} />
-            <Route path="/kayıp/oluştur" element={<CreateLost />} />
+            <Route path="/kayıp/olustur" element={<CreateLost />} />
             <Route path="/kayıp/:id" element={<LostDetail />} />
             <Route path="/sahiplendirme" element={<AdoptPets />} />
-            <Route path="/sahiplendirme/oluştur" element={<CreateAdopt />} />
+            <Route path="/sahiplendirme/olustur" element={<CreateAdopt />} />
             <Route path="/sahiplendirme/:id" element={<AdoptDetail />} />
             <Route path="/mama" element={<FoodAid />} />
-            <Route path="/mama/oluştur" element={<CreateFood />} />
+            <Route path="/mama/olustur" element={<CreateFood />} />
             <Route path="/mama/:id" element={<FoodDetail />} />
             <Route path="/favoriler" element={<Favorites />} />
             <Route path="/ilanlarım" element={<MyListings />} />
