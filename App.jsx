@@ -1,99 +1,92 @@
-import { useState, useEffect } from 'react'
-import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { useApp } from './context/AppContext'
-import BottomNav from './components/BottomNav'
-import Toast from './components/Toast'
-import Splash from './components/Splash'
-import Notifications from './components/Notifications'
+import { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { useApp } from './context/AppContext';
+import AltNav from './bileşenler/AltNav';
+import Toast from './bileşenler/Toast';
+import Splash from './bileşenler/Splash';
+import Bildirimler from './bileşenler/Bildirimler';
 
-import Home from './pages/Home'
-import Login from './pages/Login'
-import LostPets from './pages/LostPets'
-import LostDetail from './pages/LostDetail'
-import CreateLost from './pages/CreateLost'
-import AdoptPets from './pages/AdoptPets'
-import AdoptDetail from './pages/AdoptDetail'
-import CreateAdopt from './pages/CreateAdopt'
-import FoodAid from './pages/FoodAid'
-import FoodDetail from './pages/FoodDetail'
-import CreateFood from './pages/CreateFood'
-import Favorites from './pages/Favorites'
-import MyListings from './pages/MyListings'
-import Profile from './pages/Profile'
+import Home from './pages/Home';
+import Login from './pages/Login';
+import LostPets from './pages/LostPets';
+import LostDetail from './pages/LostDetail';
+import CreateLost from './pages/CreateLost';
+import AdoptPets from './pages/AdoptPets';
+import AdoptDetail from './pages/AdoptDetail';
+import CreateAdopt from './pages/CreateAdopt';
+import FoodAid from './pages/FoodAid';
+import FoodDetail from './pages/FoodDetail';
+import CreateFood from './pages/CreateFood';
+import Favorites from './pages/Favorites';
+import MyListings from './pages/MyListings';
+import Profile from './pages/Profile';
 
-const HIDE_NAV = ['/giris', '/kayip/olustur', '/sahiplendirme/olustur', '/mama/olustur']
+const GIZLE_NAV = ['/giriş', '/kayıp/oluştur', '/sahiplendirme/oluştur', '/mama/oluştur'];
 
-function hideNav(pathname) {
-  if (HIDE_NAV.includes(pathname)) return true
-  if (/^\/kayip\/[^/]+$/.test(pathname) && pathname !== '/kayip/olustur') return true
-  if (/^\/sahiplendirme\/[^/]+$/.test(pathname) && pathname !== '/sahiplendirme/olustur')
-    return true
-  if (/^\/mama\/[^/]+$/.test(pathname) && pathname !== '/mama/olustur') return true
-  return false
+function hideNav(yolAdi) {
+  if (GIZLE_NAV.includes(yolAdi)) return true;
+  if (/^\/kayıp\/[^/]+\/düzenle/.test(yolAdi) && yolAdi !== '/kayıp/oluştur') return true;
+  if (/^\/sahiplendirme\/[^/]+\/düzenle/.test(yolAdi) && yolAdi !== '/sahiplendirme/oluştur') return true;
+  if (/^\/mama\/[^/]+\/düzenle/.test(yolAdi) && yolAdi !== '/mama/oluştur') return true;
+  return false;
 }
 
 export default function App() {
-  const { toast, showSplash } = useApp()
-  const location = useLocation()
-  const noNav = hideNav(location.pathname)
-  const [notifOpen, setNotifOpen] = useState(false)
-
-  // Close notifications on route change
-  useEffect(() => {
-    setNotifOpen(false)
-  }, [location.pathname])
+  const { toast, showSplash } = useApp();
+  const konum = useLocation();
+  const noNav = hideNav(konum.pathname);
+  const [bildirimAcik, setBildirimAcik] = useState(false);
 
   useEffect(() => {
-    if (!notifOpen) return undefined
+    setBildirimAcik(false);
+  }, [konum.pathname]);
+
+  useEffect(() => {
+    if (!bildirimAcik) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') setNotifOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [notifOpen])
+      if (e.key === 'Escape') setBildirimAcik(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [bildirimAcik]);
 
-  const openNotifications = (e) => {
-    const btn = e.target.closest?.('button[aria-label="Bildirimler"]')
-    if (!btn) return
-    e.preventDefault()
-    e.stopPropagation()
-    setNotifOpen(true)
-  }
+  const acikBildirimler = (e) => {
+    const dugme = e.target.closest('button[aria-label="Bildirimler"]');
+    if (!dugme) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setBildirimAcik(true);
+  };
 
   return (
-    <div className="app-shell">
-      <div className="app-frame" onClick={openNotifications}>
+    <div className="uygulama-kabugu">
+      <div className="uygulama-cercevesi" onClick={acikBildirimler}>
         {showSplash && <Splash />}
-        <Toast message={toast} />
-        <Notifications open={notifOpen} onClose={() => setNotifOpen(false)} />
+        {toast && <Toast mesaj={toast} />}
+        <Bildirimler acik={bildirimAcik} kapat={() => setBildirimAcik(false)} />
 
-        <div className={`app-content ${noNav ? 'no-nav' : ''}`}>
+        <div className={`uygulama-icerigi ${noNav ? 'navigasyon-yok' : ''}`}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/giris" element={<Login />} />
-
-            <Route path="/kayip" element={<LostPets />} />
-            <Route path="/kayip/olustur" element={<CreateLost />} />
-            <Route path="/kayip/:id" element={<LostDetail />} />
-
+            <Route path="/giriş" element={<Login />} />
+            <Route path="/kayıp" element={<LostPets />} />
+            <Route path="/kayıp/oluştur" element={<CreateLost />} />
+            <Route path="/kayıp/:id" element={<LostDetail />} />
             <Route path="/sahiplendirme" element={<AdoptPets />} />
-            <Route path="/sahiplendirme/olustur" element={<CreateAdopt />} />
+            <Route path="/sahiplendirme/oluştur" element={<CreateAdopt />} />
             <Route path="/sahiplendirme/:id" element={<AdoptDetail />} />
-
             <Route path="/mama" element={<FoodAid />} />
-            <Route path="/mama/olustur" element={<CreateFood />} />
+            <Route path="/mama/oluştur" element={<CreateFood />} />
             <Route path="/mama/:id" element={<FoodDetail />} />
-
             <Route path="/favoriler" element={<Favorites />} />
-            <Route path="/ilanlarim" element={<MyListings />} />
+            <Route path="/ilanlarım" element={<MyListings />} />
             <Route path="/profil" element={<Profile />} />
-
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<div>Görüntü bulunamadı / yer değiştirecek</div>} />
           </Routes>
         </div>
 
-        {!noNav && <BottomNav />}
+        {!noNav && <AltNav />}
       </div>
     </div>
-  )
+  );
 }
