@@ -1,9 +1,8 @@
-name: PatiYuva GitHub Pages
+name: Deploy Vite Site to Pages
 
 on:
   push:
-    branches:
-      - ana
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -11,7 +10,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
@@ -19,30 +18,31 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     runs-on: ubuntu-latest
-
     steps:
-      - name: Kaynak kodunu al
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Node.js kur
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: 'npm'
 
-      - name: Bağımlılıkları kur
+      - name: Install dependencies
         run: npm ci
 
-      - name: PatiYuva'yı derle
+      - name: Build
         run: npm run build
 
-      - name: GitHub Pages dosyalarını hazırla
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: './dist'
 
-      - name: GitHub Pages'e yayınla
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
