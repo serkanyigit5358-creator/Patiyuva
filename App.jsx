@@ -1,49 +1,120 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Home from './pages/Home';
-import BottomNav from './components/BottomNav';
-import { AppProvider } from './context/AppContext';
-
-// NOT: AppContext'i burada yeniden createContext() ile tanımlamadık — Home.jsx onu
-// './context/AppContext' modülünden import ediyor. İki ayrı context, iki ayrı "kutup" demek
-// olurdu ve useApp() yine null dönerdi. Tek kaynak: src/context/AppContext.jsx
-
-// Sayfa taslakları
-const DummyPage = ({ title }) => (
-  <div style={{ padding: '20px', textAlign: 'center', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1F2937', marginBottom: '10px' }}>{title}</h2>
-    <p style={{ color: '#6B7280' }}>Bu sayfa çok yakında can dostlarımız için aktif edilecektir.</p>
-  </div>
-);
+import React, { useState, useEffect } from 'react';
+import './index.css';
 
 function App() {
-  // Home'da kırılma yaşanmaması için mock state değerleri
-  const [stats] = useState({ lost: 0, adopted: 0, food: 0 });
-  const [user] = useState({ name: 'Serkan', email: 'serkanyigit5358@gmail.com' });
+  // Sayaçların başlangıç değerlerini sıfırladık
+  const [stats, setStats] = useState({
+    yuva Bulanlar: 0,
+    Mama Bagislari: 0,
+    Aktif Ilanlar: 0
+  });
+
+  const [email, setEmail] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Animasyonlu sayaç artışı
+  useEffect(() => {
+    const targetStats = { yuvaBulanlar: 142, MamaBagislari: 2500, AktifIlanlar: 84 };
+    const interval = setInterval(() => {
+      setStats(prev => {
+        const next = { ...prev };
+        let done = true;
+        
+        if (next.yuvaBulanlar < targetStats.yuvaBulanlar) {
+          next.yuvaBulanlar += 2;
+          done = false;
+        }
+        if (next.MamaBagislari < targetStats.MamaBagislari) {
+          next.MamaBagislari += 50;
+          done = false;
+        }
+        if (next.AktifIlanlar < targetStats.AktifIlanlar) {
+          next.AktifIlanlar += 1;
+          done = false;
+        }
+
+        if (done) clearInterval(interval);
+        return next;
+      });
+    }, 30);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+    if (email) {
+      setIsSubmitted(true);
+      setEmail('');
+      setTimeout(() => setIsSubmitted(false), 4000);
+    }
+  };
 
   return (
-    <AppProvider value={{ stats, user }}>
-      <Router>
-        <div className="app-container" style={{ minHeight: '100vh', paddingBottom: '70px', background: '#FFFBF7' }}>
-
-          {/* Tüm Sayfa Rotaları Tanımlamaları */}
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/kayip" element={<DummyPage title="Kayıp Hayvan Bildir" />} />
-            <Route path="/sahiplendirme" element={<DummyPage title="Sahiplendirme İlanları" />} />
-            <Route path="/mama" element={<DummyPage title="Mama Desteği" />} />
-            <Route path="/favoriler" element={<DummyPage title="Favori İlanlarım" />} />
-            <Route path="/ilanlarim" element={<DummyPage title="Benim İlanlarım" />} />
-            <Route path="/profil" element={<DummyPage title="Profilim" />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-
-          {/* Sabit Alt Menü */}
-          <BottomNav />
-
+    <div className="app-container">
+      {/* Üst Menü */}
+      <nav className="navbar">
+        <div className="logo">🐾 PatiYuva</div>
+        <div className="nav-links">
+          <a href="#ilanlar">İlanlar</a>
+          <a href="#bagis">Bağış</a>
+          <a href="#iletisim">İletişim</a>
         </div>
-      </Router>
-    </AppProvider>
+      </nav>
+
+      {/* Ana Karşılama Alanı */}
+      <header className="hero-section">
+        <h1>Onlara Sıcak Bir Yuva Olun</h1>
+        <p>Sahiplenilmeyi bekleyen yüzlerce can dostumuz sizinle tanışmak için sabırsızlanıyor.</p>
+        <div className="hero-buttons">
+          <a href="#ilanlar" className="btn btn-primary">Pati Bul</a>
+          <a href="#bagis" className="btn btn-secondary">Destek Ol</a>
+        </div>
+      </header>
+
+      {/* Sayaçlar Bölümü */}
+      <section className="stats-section">
+        <div className="stat-card">
+          <h3>{stats.yuvaBulanlar}+</h3>
+          <p>Yuva Bulan Pati</p>
+        </div>
+        <div className="stat-card">
+          <h3>{stats.MamaBagislari} kg+</h3>
+          <p>Mama Bağışı</p>
+        </div>
+        <div className="stat-card">
+          <h3>{stats.AktifIlanlar}</h3>
+          <p>Aktif İlan</p>
+        </div>
+      </section>
+
+      {/* E-posta Kayıt Alanı */}
+      <section className="newsletter-section">
+        <h3>Bizden Haber Alın</h3>
+        <p>Yeni ilanlar ve mama kampanyalarından ilk siz haberdar olun.</p>
+        {!isSubmitted ? (
+          <form onSubmit={handleEmailSubmit} className="newsletter-form">
+            <input 
+              type="email" 
+              placeholder="E-posta adresiniz" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required 
+            />
+            <button type="submit" className="btn btn-submit">Abone Ol</button>
+          </form>
+        ) : (
+          <div className="success-message">🎉 Başarıyla abone oldunuz! Teşekkürler.</div>
+        )}
+      </section>
+
+      {/* Alt Menü Navigasyon (Mobil) */}
+      <div className="bottom-nav">
+        <a href="#ilanlar" className="nav-item">🐾 İlanlar</a>
+        <a href="#bagis" className="nav-item">❤️ Bağış</a>
+        <a href="#profil" className="nav-item">👤 Profil</a>
+      </div>
+    </div>
   );
 }
 
