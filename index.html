@@ -1,13 +1,164 @@
 <!DOCTYPE html>
 <html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Pati Yuva App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Kuşu Kurtar</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif}
+body{background:#72d0f2;touch-action:none}
+#game{position:relative;width:100vw;height:100vh;overflow:hidden;background:linear-gradient(#72d0f2 0 78%,#78c34d 78% 100%)}
+canvas{display:block;width:100%;height:100%}
+#score{position:absolute;top:20px;left:0;width:100%;text-align:center;color:#fff;font-size:42px;font-weight:bold;text-shadow:2px 2px 4px #555;z-index:3}
+#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,.28);z-index:5}
+#menu h1{margin:0 0 12px;color:#fff;font-size:46px;text-shadow:2px 3px 4px #555;text-align:center}
+#result{color:#fff;font-size:25px;text-shadow:1px 2px 3px #555;margin-bottom:22px}
+button{border:0;border-radius:18px;background:#fff;color:#2676b8;font-size:24px;font-weight:bold;padding:18px 42px;box-shadow:0 5px 0 #c7c7c7}
+button:active{transform:translateY(4px);box-shadow:0 1px 0 #c7c7c7}
+.hint{position:absolute;bottom:25px;color:#fff;font-size:16px;text-shadow:1px 1px 2px #555;z-index:4}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="game">
+<canvas id="c"></canvas>
+<div id="score">0</div>
+<div id="menu">
+  <h1>🐦 Kuşu Kurtar</h1>
+  <div id="result">Dokun ve uçur!</div>
+  <button id="start">OYUNA BAŞLA</button>
+</div>
+<div class="hint">Ekrana dokun • Kuşu uçur</div>
+</div>
+
+<script>
+const canvas=document.getElementById("c"),ctx=canvas.getContext("2d");
+const scoreEl=document.getElementById("score"),menu=document.getElementById("menu");
+const result=document.getElementById("result"),start=document.getElementById("start");
+
+let W,H,dpr,playing=false,score=0,best=Number(localStorage.getItem("kusuBest")||0);
+let bird,pipes,lastTime=0,spawnTimer=0;
+
+function resize(){
+  dpr=Math.min(devicePixelRatio||1,2);
+  W=innerWidth; H=innerHeight;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+"px"; canvas.style.height=H+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener("resize",resize); resize();
+
+function reset(){
+  bird={x:W*.27,y:H*.45,r:18,vy:0,rot:0};
+  pipes=[];score=0;spawnTimer=0;
+  scoreEl.textContent="0";
+}
+
+function startGame(){
+  reset(); playing=true; menu.classList.add("hidden");
+  lastTime=performance.now();
+  flap();
+  requestAnimationFrame(loop);
+}
+
+function gameOver(){
+  if(!playing)return;
+  playing=false;
+  if(score>best){best=score;localStorage.setItem("kusuBest",best);}
+  result.textContent=`💥 Oyun Bitti — Skor: ${score} • Rekor: ${best}`;
+  start.textContent="TEKRAR OYNA";
+  menu.classList.remove("hidden");
+}
+
+function flap(){
+  if(!playing)return;
+  bird.vy=-H*.0065;
+}
+
+function addPipe(){
+  const gap=Math.max(145,H*.22);
+  const minTop=90,maxTop=H-gap-130;
+  const top=minTop+Math.random()*Math.max(20,maxTop-minTop);
+  pipes.push({x:W+30,w:70,top,gap,passed:false});
+}
+
+function update(dt){
+  const gravity=H*.000018;
+  bird.vy+=gravity*dt;
+  bird.y+=bird.vy*dt;
+  bird.rot=Math.max(-.5,Math.min(1.1,bird.vy*.002));
+
+  spawnTimer+=dt;
+  if(spawnTimer>1450){spawnTimer=0;addPipe();}
+
+  const speed=W*.00042;
+  for(const p of pipes){
+    p.x-=speed*dt;
+    if(!p.passed && p.x+p.w<bird.x){
+      p.passed=true; score++; scoreEl.textContent=score;
+    }
+  }
+  pipes=pipes.filter(p=>p.x+p.w>-20);
+
+  if(bird.y-bird.r<0 || bird.y+bird.r>H*.78){gameOver();return;}
+
+  for(const p of pipes){
+    const hitX=bird.x+bird.r>p.x && bird.x-bird.r<p.x+p.w;
+    const hitY=bird.y-bird.r<p.top || bird.y+bird.r>p.top+p.gap;
+    if(hitX&&hitY){gameOver();return;}
+  }
+}
+
+function drawCloud(x,y,s){
+  ctx.fillStyle="rgba(255,255,255,.72)";
+  ctx.beginPath();
+  ctx.arc(x,y,28*s,0,Math.PI*2);
+  ctx.arc(x+32*s,y-12*s,36*s,0,Math.PI*2);
+  ctx.arc(x+68*s,y,27*s,0,Math.PI*2);
+  ctx.fill();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  drawCloud(W*.18,H*.22,.9);
+  drawCloud(W*.68,H*.14,.75);
+
+  // zemin
+  ctx.fillStyle="#78c34d";ctx.fillRect(0,H*.78,W,H*.22);
+
+  // borular
+  for(const p of pipes){
+    ctx.fillStyle="#3fa83c";
+    ctx.fillRect(p.x,0,p.w,p.top);
+    ctx.fillRect(p.x,p.top+p.gap,p.w,H-(p.top+p.gap));
+    ctx.fillStyle="#328c32";
+    ctx.fillRect(p.x-7,p.top-22,p.w+14,22);
+    ctx.fillRect(p.x-7,p.top+p.gap,p.w+14,22);
+  }
+
+  // kuş
+  ctx.save();
+  ctx.translate(bird.x,bird.y);
+  ctx.rotate(bird.rot);
+  ctx.fillStyle="#ffd52e";ctx.beginPath();ctx.arc(0,0,bird.r,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#f6a623";ctx.beginPath();
+  ctx.moveTo(bird.r-2,-1);ctx.lineTo(bird.r+22,7);ctx.lineTo(bird.r-2,10);ctx.fill();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(7,-7,7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#222";ctx.beginPath();ctx.arc(9,-7,3,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function loop(t){
+  if(!playing)return;
+  const dt=Math.min(32,t-lastTime);lastTime=t;
+  update(dt);draw();
+  if(playing)requestAnimationFrame(loop);
+}
+canvas.addEventListener("pointerdown",e=>{e.preventDefault(); if(playing)flap();});
+start.addEventListener("click",startGame);
+reset();draw();
+</script>
+</body>
 </html>
